@@ -37,6 +37,10 @@ train_normal = image_normalization_mapping(train_normal, 0, 255, -1, 1)
 test_normal = image_normalization_mapping(test_normal, 0, 255, -1, 1)
 anomal = image_normalization_mapping(anomal, 0, 255, -1, 1)
 
+def get_mse(original, decoded):
+    error = np.sum((original - decoded) ** 2)
+    error /= IM_SIZE * IM_SIZE
+    return error
 
 def Convolutional_Autoencoder(lr):
     input_img = Input(shape = (IM_SIZE,IM_SIZE,IM_CHANNELS))
@@ -56,7 +60,7 @@ def Convolutional_Autoencoder(lr):
     autoencoder = Model(inputs=input_img , outputs=decoded)    
     optimizer = Adam(lr)
     autoencoder.compile(loss='mean_squared_error', 
-        optimizer=optimizer, metrics=['accuracy'])
+        optimizer=optimizer, metrics=['accuracy', get_mse])
     
     dim_reducer = Model(inputs = input_img, outputs = encoding)
     
@@ -86,7 +90,7 @@ def Classical_autoencoder(lr = 0.01):
     optimizer = Adam(lr)
     
     autoencoder_model.compile(loss='mean_squared_error', 
-        optimizer=optimizer, metrics=['accuracy'])
+        optimizer=optimizer, metrics=['accuracy', get_mse])
     
     return autoencoder_model
 
@@ -106,14 +110,19 @@ def train(epochs=500, lr = 0.01):
     autoencoder, dim_reducer = Convolutional_Autoencoder(lr)
     for epoch in range(epochs):
         n = 0
-        LOSS, ACC = 0., 0.
+        LOSS, ACC, MSE = 0., 0., 0.
         for normal_data in Batches(train_normal, 1):
-            loss, accuracy = autoencoder.train_on_batch(normal_data,normal_data)
+            loss, accuracy, mse = autoencoder.train_on_batch(normal_data,normal_data)
             n+=1
             LOSS += loss
             ACC += accuracy
+            MSE += mse
         LOSS/= n
         ACC/=n
+        MSE/=n
         
-        print(f'epoch {epoch} loss: {LOSS} accuracy: {accuracy}')
-train()
+        print(f'epoch {epoch} loss: {LOSS} accuracy: {ACC} mse: {MSE}')
+    return dim_reducer
+
+        
+dim_reducer = train()
