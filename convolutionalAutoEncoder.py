@@ -51,35 +51,21 @@ def get_mse(original, decoded):
     error /= IM_SIZE * IM_SIZE
     return error
 
-  
+
 def Convolutional_Autoencoder(lr):
     input_img = Input(shape = (IM_SIZE,IM_SIZE,IM_CHANNELS))
-<<<<<<< HEAD
-    l1 = Conv2D(filters=3, kernel_size=2, strides=(2,2), input_shape=(IM_SIZE,IM_SIZE,IM_CHANNELS), activation = 'tanh')(input_img)
-    l2 =  Conv2D(filters=32, kernel_size=2, strides=(2,2), activation = 'tanh')(l1)
-    l3 = Conv2D(filters=64, kernel_size=2, strides=(2,2), activation = 'tanh')(l2)
-    l4 =  Conv2D(filters=128, kernel_size=2, strides=(2,2), activation = 'tanh')(l3)
-
-    encoding = Conv2D(filters=128, kernel_size=2, strides=(2,2), activation = 'tanh')(l4)
-
-    l5 = Conv2DTranspose(filters=128, kernel_size=2, strides=(2,2), activation = 'tanh')(encoding)
-    l6 = Conv2DTranspose(filters=128, kernel_size=2, strides=(2,2), activation = 'tanh')(l5)
-    l7 = Conv2DTranspose(filters=64, kernel_size=2, strides=(2,2), activation = 'tanh')(l6)
-    l8 = Conv2DTranspose(filters=32, kernel_size=2, strides=(2,2), activation = 'tanh')(l7)
-=======
     l1 = Conv2D(filters=16, kernel_size=2, strides=(2,2), input_shape=(IM_SIZE,IM_SIZE,IM_CHANNELS), activation = 'tanh')(input_img)
     l2 =  Conv2D(filters=64, kernel_size=2, strides=(2,2), activation = 'tanh')(l1)
     l3 = Conv2D(filters=128, kernel_size=2, strides=(2,2), activation = 'tanh')(l2)
     l4 =  Conv2D(filters=256, kernel_size=2, strides=(2,2), activation = 'tanh')(l3)
-    
+
     encoding = Conv2D(filters=32, kernel_size=2, strides=(2,2), activation = 'tanh')(l4)
-    
+
     l5 = Conv2DTranspose(filters=512, kernel_size=2, strides=(2,2), activation = 'tanh')(encoding)
     l6 = Conv2DTranspose(filters=256, kernel_size=2, strides=(2,2), activation = 'tanh')(l5)
     l7 = Conv2DTranspose(filters=128, kernel_size=2, strides=(2,2), activation = 'tanh')(l6)
     l8 = Conv2DTranspose(filters=128, kernel_size=2, strides=(2,2), activation = 'tanh')(l7)
-    
->>>>>>> 8ad80392a603de7f1c480bafb0be13552fd4a9b0
+
     decoded = Conv2DTranspose(filters=3, kernel_size=2, strides=(2,2), activation = 'tanh')(l8)
 
     autoencoder = Model(inputs=input_img , outputs=decoded)
@@ -112,15 +98,9 @@ def Classical_autoencoder(lr = 0.01):
 
     autoencoder_model = Model(inputs=inp , outputs=out)
     autoencoder_model.summary()
-<<<<<<< HEAD
-    optimizer = Adam(lr)
+    optimizer = Adam(lr, 0.5)
 
     autoencoder_model.compile(loss='mean_squared_error',
-=======
-    optimizer = Adam(lr, 0.5)
-    
-    autoencoder_model.compile(loss='mean_squared_error', 
->>>>>>> 8ad80392a603de7f1c480bafb0be13552fd4a9b0
         optimizer=optimizer, metrics=['accuracy', get_mse])
 
     return autoencoder_model
@@ -150,10 +130,7 @@ def train(epochs=5000, lr = 0.001):
         LOSS/= n
         ACC/=n
         MSE/=n
-<<<<<<< HEAD
 
-=======
-        
         if epoch%100==0:
           img = image_normalization_mapping(train_normal[2], -1, 1, 0, 255).astype('uint8')
           plt.imshow(img)
@@ -168,17 +145,16 @@ def train(epochs=5000, lr = 0.001):
           img = autoencoder.predict(train_normal[0][np.newaxis,:])
           img = image_normalization_mapping(img[0], -1, 1, 0, 255).astype('uint8')
           plt.imshow(img)
-          plt.show()   
->>>>>>> 8ad80392a603de7f1c480bafb0be13552fd4a9b0
+          plt.show()
         print(f'epoch {epoch} loss: {LOSS} accuracy: {ACC} mse: {MSE}')
-        
+
     img = image_normalization_mapping(train_normal[2], -1, 1, 0, 255).astype('uint8')
     plt.imshow(img)
     plt.show()
     img = autoencoder.predict(train_normal[2][np.newaxis,:])
     img = image_normalization_mapping(img[0], -1, 1, 0, 255).astype('uint8')
     plt.imshow(img)
-    plt.show()  
+    plt.show()
     return dim_reducer
 
 
@@ -193,7 +169,7 @@ reduced_anomal = dim_reducer.predict(anomal)
 print(reduced_anomal.shape)
 reduced_train_normal = dim_reducer.predict(train_normal)
 reduced_test_normal = dim_reducer.predict(test_normal)
-test_mixed = np.concatenate((reduced_test_normal,reduced_anomal)) 
+test_mixed = np.concatenate((reduced_test_normal,reduced_anomal))
 labels = np.concatenate((np.ones(reduced_test_normal.shape[0]),np.zeros(reduced_anomal.shape[0])))
 
 #SAVE IMAGES WITH REDUCED DIMENTIONS
@@ -202,6 +178,6 @@ with open('train_normal.pickle', 'wb') as f:
 
 with open('test_mixed.pickle', 'wb') as f:
   pickle.dump(test_mixed, f)
-  
+
 with open('labels.pickle', 'wb') as f:
   pickle.dump(labels, f)
