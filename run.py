@@ -1,88 +1,89 @@
 
 import pandas as pd # import pandas_profiling
 import numpy as np
-from time import time
-from keras.layers import Input, Dense,Dropout
-from keras.models import Model
-from keras.callbacks import TensorBoard
-import tensorflow as tf
-from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
-from sklearn.model_selection import train_test_split
+import pickle,warnings
 from sklearn import svm
-from keras import optimizers, regularizers, backend as K
 from sklearn.metrics import accuracy_score,f1_score,confusion_matrix,classification_report
+#from preprocessing.py
+from preprocessing import getKdd99_AE,get_kdd_data
 
-df = pd.read_csv('kdd99_train.csv.gz', compression='gzip',sep=',')
-# df = pd.read_csv('my_file.csv.gz', compression='gzip',sep=',')
-# df.drop(["Unnamed: 0"],inplace=True,axis=1)
+from matplotlib import pyplot as plt
+%matplotlib inline
 
-df.head()
-anomalies = df[df["label"]==0].sample(n=372781, replace=False, random_state=43)
-nomalies = df[df["label"]==1]
-
-# len(nomalies)+len(anomalies)
-# len(nomalies)
-
-nomalies_train ,nomalies_test = train_test_split(nomalies,test_size=0.1,random_state=41)
-
-nomalies_train = nomalies_train.drop(["label"],axis=1).values
-
-Scaler = StandardScaler().fit(nomalies_train)
-
-nomalies_train = Scaler.transform(nomalies_train)
-
-input_dim = nomalies_train.shape[1]
-latent_space_size = 12
-K.clear_session()
-input_ = Input(shape = (input_dim, ))
-
-layer_1 = Dense(100, activation="tanh")(input_)
-layer_2 = Dense(50, activation="tanh")(layer_1)
-layer_3 = Dense(25, activation="tanh")(layer_2)
-
-encoding = Dense(latent_space_size,activation=None)(layer_3)
-
-layer_5 = Dense(50, activation="tanh")(encoding)
-layer_6 = Dense(50, activation="tanh")(layer_5)
-layer_7 = Dense(100, activation='tanh')(layer_6)
-
-decoded = Dense(input_dim,activation=None)(layer_7)
-
-autoencoder = Model(inputs=input_ , outputs=decoded)
-# opt = optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
-autoencoder.compile(metrics=['accuracy'],loss='mean_squared_error',optimizer="adam")
-autoencoder.summary()
-
-#create TensorBoard
-tb = TensorBoard(log_dir="./logs/{}".format(time()),histogram_freq=0,write_graph=True,write_images=False)
+warnings.filterwarnings('ignore')
 
 
-# Fit autoencoder
-autoencoder.fit(nomalies_train, nomalies_train,epochs=10,validation_split=0.2 ,batch_size=100,shuffle=False,verbose=1,callbacks=[tb])
-# autoencoder.fit(X, X,epochs=5,validation_split=0.2 ,
-#                 batch_size=128,shuffle=True,verbose=1,callbacks=[tb])
+#Mean mean_squared_error for calculating reconstruction error
+def mse(pred,true):
+    result = []
+    for sample1,sample2 in zip(pred,true):
+        error = np.sum((sample1.astype("float") - sample2.astype("float")) ** 2)
+        error /= float(len(sample2))
+        result.append(error)
+    return np.array(result)
 
-dim_reducer = Model(inputs = input_, outputs = encoding)
+#reconctruction losses (AE)
+def get_losses(model, x):
+    reconstruct_err = []
+    pred = model.predict(x)
+    err = mse(x, pred)
+    return err
+
+#measure model perfomence in terms of accuracy, confusion_matrix and F1 score
+def perfomence(true,pred):
+    acc = accuracy_score(pred,true)
+    print("Accurary : ",acc)
+    f1 = f1_score(true,pred)
+    print("F1 Score : ",f1)
+    confusion_matrix(true,pred)
+    print(classification_report(pred,true))
+
+def IsAnomaly(model,x,threshold=0.252):
+    pred = model.predict(x)
+    MSE = mse(pred,x)
+    res = np.where(MSE < threshold,1,-1) #anomaly : -1, normal : 1
+    return res
+
+# ress = IsAnomaly(autoencoder,nomalies_train,0.252)
+def get_anomaly_score(model,x):
+    pred = model.predict(x)
+    return mse(pred,x)[:,np.newaxis]
+
+#Get train and test data
+nomalies_train, test_data, ytest = get_kdd_data()
+
+#create an autoencoder to be also used in dimension reduction
+autoencoder , dim_reducer = getKdd99_AE(nomalies_train)
+
+#reduce dimension using encoder from autoencoder (train and test set)
 X_dim_reduced = dim_reducer.predict(nomalies_train)
+xtext = dim_reducer.predict(test_data)
 
 model = svm.OneClassSVM(kernel='rbf', nu=0.005,gamma="auto")
-
 model.fit(X_dim_reduced)
-# pp = model.predict(X_dim_reduced)
-# np.unique(pp,return_counts= True)
 
-anomalies.label = np.where(anomalies.label == 0,-1,0)
-
-test_data = pd.concat([nomalies_test,anomalies])
-ytest = test_data.label.values
-
-xtext = dim_reducer.predict(Scaler.transform(test_data.drop(["label"],axis=1).values))
+#predict anomalies from test data
 pred = model.predict(xtext)
 
-acc = accuracy_score(pred,ytest)
-print("Accurary : ",acc)
-f1 = f1_score(ytest,pred)
-print("F1 Score : ",f1)
-# confusion_matrix(ytest,pred)
-print(classification_report(pred,ytest))
+#Display accuraccy, F1 score, confusion_matrix and classification report
+perfomence(ytest,pred)
+
+#Autoencoder as clasifier
+#find the threshold
+losses = get_losses(autoencoder, nomalies_train)
+loss_df = pd.DataFrame(losses,columns=["loss"])
+
+loss_df.describe()
+#test with autoencoder
+#predict anomalies using autoencoder (utilizing the reconstruction error threshold) & measure perfomence
+pred = IsAnomaly(autoencoder,test_data)
+perfomence(ytest,pred)
+
+# save the classifier
+with open('oncsvm.pkl', 'wb') as fid:
+    pickle.dump(model, fid)
+
+# load classifier
+with open('oncsvm.pkl', 'rb') as fid:
+    model1 = pickle.load(fid)
+model1.get_params

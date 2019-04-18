@@ -48,59 +48,58 @@ def Convolutional_Autoencoder(lr):
     l2 =  Conv2D(filters=32, kernel_size=2, strides=(2,2), activation = 'tanh')(l1)
     l3 = Conv2D(filters=64, kernel_size=2, strides=(2,2), activation = 'tanh')(l2)
     l4 =  Conv2D(filters=128, kernel_size=2, strides=(2,2), activation = 'tanh')(l3)
-    
+
     encoding = Conv2D(filters=128, kernel_size=2, strides=(2,2), activation = 'tanh')(l4)
-    
+
     l5 = Conv2DTranspose(filters=128, kernel_size=2, strides=(2,2), activation = 'tanh')(encoding)
     l6 = Conv2DTranspose(filters=128, kernel_size=2, strides=(2,2), activation = 'tanh')(l5)
     l7 = Conv2DTranspose(filters=64, kernel_size=2, strides=(2,2), activation = 'tanh')(l6)
     l8 = Conv2DTranspose(filters=32, kernel_size=2, strides=(2,2), activation = 'tanh')(l7)
     decoded = Conv2DTranspose(filters=3, kernel_size=2, strides=(2,2), activation = 'tanh')(l8)
-    
-    autoencoder = Model(inputs=input_img , outputs=decoded)    
+
+    autoencoder = Model(inputs=input_img , outputs=decoded)
     optimizer = Adam(lr)
-    autoencoder.compile(loss='mean_squared_error', 
+    autoencoder.compile(loss='mean_squared_error',
         optimizer=optimizer, metrics=['accuracy', get_mse])
-    
+
     dim_reducer = Model(inputs = input_img, outputs = encoding)
-    
+
     return autoencoder, dim_reducer
 
-def Classical_autoencoder(lr = 0.01): 
+def Classical_autoencoder(lr = 0.01):
     autoencoder = Sequential()
     autoencoder.add(Flatten())
     autoencoder.add(Dense(128, activation="tanh"))
     autoencoder.add(Dense(64, activation="tanh"))
     autoencoder.add(Dense(32, activation="tanh"))
     autoencoder.add(Dense(4,activation=None))
-    
-    
+
+
     autoencoder.add(Dense(4, activation="tanh"))
     autoencoder.add(Dense(32, activation="tanh"))
     autoencoder.add(Dense(64, activation='tanh'))
-    
+
     autoencoder.add(Dense(IM_SIZE*IM_SIZE*IM_CHANNELS,activation='tanh'))
     autoencoder.add(Reshape((IM_SIZE,IM_SIZE,IM_CHANNELS)))
-    
+
     inp = Input(shape=(IM_SIZE, IM_SIZE, IM_CHANNELS))
     out = autoencoder(inp)
-    
+
     autoencoder_model = Model(inputs=inp , outputs=out)
     autoencoder_model.summary()
     optimizer = Adam(lr)
-    
-    autoencoder_model.compile(loss='mean_squared_error', 
+
+    autoencoder_model.compile(loss='mean_squared_error',
         optimizer=optimizer, metrics=['accuracy', get_mse])
-    
+
     return autoencoder_model
 
-   
 def Batches(normal_data, batches_numb):
     N = normal_data.shape[0]
     batch_size = int(N/batches_numb) + 1
     for current_batch in range(batches_numb):
-        start_idx = current_batch * batch_size 
-        end_idx = start_idx + batch_size 
+        start_idx = current_batch * batch_size
+        end_idx = start_idx + batch_size
         if end_idx > N:
             end_idx = N
         data = normal_data[start_idx:end_idx]
@@ -120,9 +119,9 @@ def train(epochs=500, lr = 0.01):
         LOSS/= n
         ACC/=n
         MSE/=n
-        
+
         print(f'epoch {epoch} loss: {LOSS} accuracy: {ACC} mse: {MSE}')
     return dim_reducer
 
-        
+
 dim_reducer = train()
