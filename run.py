@@ -119,7 +119,8 @@ from sklearn.ensemble import IsolationForest
 
 X_train,xtext,ytest = get_isof_data()
 
-isofor = IsolationForest(n_jobs=-1,n_estimators=100, behaviour="new",max_samples=256, contamination=0.6)
+
+isofor = IsolationForest(n_jobs=-1,n_estimators=100, behaviour="new",max_samples=256, contamination=0.1)
 isofor.fit(X_train)
 
 pred = isofor.predict(xtext)
