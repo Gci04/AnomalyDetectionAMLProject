@@ -30,7 +30,7 @@ def get_losses(model, x):
     return err
 
 #measure model performance in terms of accuracy, confusion_matrix and F1 score
-def performance(true,pred):
+def performance(true,pred,title="confusion matrix"):
     acc = accuracy_score(pred,true)
     print("Accurary : ",acc)
     f1 = f1_score(true,pred)
@@ -44,7 +44,9 @@ def performance(true,pred):
     plt.figure(figsize = (10,7))
     plt.xticks(fontsize=20)
     plt.yticks(fontsize=20)
-    _ = sn.heatmap(df_cm,fmt='g',cmap='Blues',annot=True,annot_kws={"size": 20})
+    plt.title(title,fontsize=20)
+    fig = sn.heatmap(df_cm,fmt='g',annot=True,annot_kws={"size": 20})
+    plt.savefig("test.png")
 
 def IsAnomaly(model,x,threshold=0.252):
     pred = model.predict(x)
@@ -72,9 +74,11 @@ xtext = dim_reducer.predict(test_data)
 
 #CPU times: user 2h 32min 2s, sys: 19.9 s, total: 2h 32min 22s
 # Wall time: 2h 32min 20s , nu=0.03
-model = svm.OneClassSVM(kernel='rbf', nu=0.005,gamma="auto")
-model.fit(X_dim_reduced)
 
+model = svm.OneClassSVM(kernel='rbf', nu=0.01,gamma="auto")
+%%time
+model.fit(X_dim_reduced)
+X_dim_reduced.shape
 # CPU times: user 1h 43min 19s, sys: 10.7 s, total: 1h 43min 30s
 # Wall time: 1h 43min 29s
 # OneClassSVM(cache_size=200, coef0=0.0, degree=3, gamma='auto', kernel='rbf',
@@ -84,10 +88,11 @@ model.fit(X_dim_reduced)
 # F1 Score :  0.9923094299326434
 
 #predict anomalies from test data
+%%time
 pred = model.predict(xtext)
-
+xtext.shape
 #Display accuraccy, F1 score, confusion_matrix and classification report
-performance(ytest,pred)
+performance(ytest,pred,"OCSVM Confusion Matrix")
 
 #Autoencoder as clasifier
 #find the threshold
@@ -120,5 +125,3 @@ import seaborn as sn
 from matplotlib import pyplot as plt
 aa = isofor.predict(test_data)
 performance(ytest,aa)
-
-loss_df.copy()
