@@ -35,8 +35,16 @@ def perfomence(true,pred):
     print("Accurary : ",acc)
     f1 = f1_score(true,pred)
     print("F1 Score : ",f1)
-    confusion_matrix(true,pred)
+    # print("Confusion matrix")
+    # print(confusion_matrix(true,pred))
+    print("Classification report")
     print(classification_report(pred,true))
+    df_cm = pd.DataFrame(confusion_matrix(true,pred), index = ["normal","Anomal"],
+                      columns = ["Normal","Anomal"])
+    plt.figure(figsize = (10,7))
+    plt.xticks(fontsize=20)
+    plt.yticks(fontsize=20)
+    _ = sn.heatmap(df_cm,fmt='g',cmap='Blues',annot=True,annot_kws={"size": 20})
 
 def IsAnomaly(model,x,threshold=0.252):
     pred = model.predict(x)
@@ -87,3 +95,14 @@ with open('oncsvm.pkl', 'wb') as fid:
 with open('oncsvm.pkl', 'rb') as fid:
     model1 = pickle.load(fid)
 model1.get_params
+
+#IsolationForest
+from sklearn.ensemble import IsolationForest
+
+isofor = IsolationForest(n_jobs=-1,n_estimators=100, behaviour="new",max_samples=256, contamination=0.6)
+isofor.fit(test_data)
+
+import seaborn as sn
+from matplotlib import pyplot as plt
+aa = isofor.predict(test_data)
+perfomence(ytest,aa)

@@ -4,6 +4,7 @@ Created on Tue Apr 16 09:26:07 2019
 
 @author: Rufina
 """
+import pandas as pd
 import numpy as np
 from keras.datasets import cifar10
 from matplotlib import pyplot as plt
@@ -11,6 +12,11 @@ from keras.models import Sequential,  Model
 from keras.layers import Conv2D, LeakyReLU, BatchNormalization, Conv2DTranspose, ReLU, Input, Dense, Reshape, Flatten, Dropout
 from keras.optimizers import Adam
 import pickle
+from sklearn.metrics import accuracy_score,f1_score,classification_report,confusion_matrix
+import seaborn as sn
+import matplotlib.pyplot as plt
+%matplotlib inline
+
 # from preprocessing import image_normalization_mapping
 
 #CONSTANT
@@ -47,10 +53,34 @@ test_normal = image_normalization_mapping(test_normal, 0, 255, -1, 1)
 anomal = image_normalization_mapping(anomal, 0, 255, -1, 1)
 
 def get_mse(original, decoded):
-    error = np.sum((original - decoded) ** 2)
-    error /= IM_SIZE * IM_SIZE
-    return error
+    n = len(original[0].flatten())
+    res = []
+    for img1,img2 in zip(original,decoded):
+        error = np.sum((img2.flatten() - img1.flatten()) ** 2)
+        error /= n
+        res.append(error)
+    return np.expand_dims(res,1)
 
+def predict_anomaly(model,imgs,threshold):
+    pred = model.predict(imgs)
+    MSE = get_mse(pred,imgs)
+    res = np.where(MSE > threshold,0,1) #anomaly : 0, normal : 1
+    return res
+def perfomence(true,pred):
+    acc = accuracy_score(pred,true)
+    print("Accurary : ",acc)
+    f1 = f1_score(true,pred)
+    print("F1 Score : ",f1)
+    # print("Confusion matrix")
+    # print(confusion_matrix(true,pred))
+    print("Classification report")
+    print(classification_report(pred,true))
+    df_cm = pd.DataFrame(confusion_matrix(true,pred), index = ["normal","Anomal"],
+                      columns = ["Normal","Anomal"])
+    plt.figure(figsize = (10,7))
+    plt.xticks(fontsize=20)
+    plt.yticks(fontsize=20)
+    _ = sn.heatmap(df_cm,fmt='g',cmap='Blues',annot=True,annot_kws={"size": 20})
 
 def Convolutional_Autoencoder(lr):
     input_img = Input(shape = (IM_SIZE,IM_SIZE,IM_CHANNELS))
@@ -101,7 +131,7 @@ def Classical_autoencoder(lr = 0.01):
     optimizer = Adam(lr, 0.5)
 
     autoencoder_model.compile(loss='mean_squared_error',
-        optimizer=optimizer, metrics=['accuracy', get_mse])
+        optimizer=optimizer, metrics=['accuracy'])
 
     return autoencoder_model
 
@@ -155,10 +185,10 @@ def train(epochs=5000, lr = 0.001):
     img = image_normalization_mapping(img[0], -1, 1, 0, 255).astype('uint8')
     plt.imshow(img)
     plt.show()
-    return dim_reducer
+    return dim_reducer,autoencoder
 
-
-dim_reducer = train()
+#train and return the encoder and full autoencoder
+dim_reducer, cnn_autoencoder = train()
 
 #SAVE MODEL
 with open('dim_reducer.pickle', 'wb') as f:
@@ -181,3 +211,53 @@ with open('test_mixed.pickle', 'wb') as f:
 
 with open('labels.pickle', 'wb') as f:
   pickle.dump(labels, f)
+
+#classify images using CNN autoencoder and utilizing the reconctruction error
+cnn_autoencoder = None
+with open('./convAutoEncOutput/autoencoder.pickle', 'rb') as fid:
+    cnn_autoencoder = pickle.load(fid)
+
+with open('./convAutoEncOutput/train_normal.pickle', 'rb') as fid:
+    X = pickle.load(fid)
+
+with open('./convAutoEncOutput/test_mixed.pickle', 'rb') as fid:
+    test_mixed = pickle.load(fid)
+
+#Get threshold and get insigt on possible thresholds
+pred = cnn_autoencoder.predict(train_normal)
+
+err = get_mse(train_normal,pred)
+losses = pd.DataFrame(err,columns=["loss"])
+
+fig = plt.figure(figsize=(10,8))
+ax = fig.add_subplot(111)
+
+
+_ = ax.hist(losses.loss.values, bins=10)
+plt.xticks(fontsize=14)
+plt.yticks(fontsize=14)
+plt.ylabel("Frequency",fontsize=16,fontweight='bold')
+plt.xlabel("Mean Squared Error",fontsize=16,fontweight='bold')
+fig.savefig("CNN_AE_losses.png")
+plt.show()
+# losses.describe()
+#find threshold
+t = []
+for i in np.linspace(0.015,0.3,50):
+    pred = predict_anomaly(cnn_autoencoder,tes,i)
+    t.append((i,accuracy_score(labels,pred),f1_score(labels,pred)))
+
+threshold_df = pd.DataFrame(t,columns=["Threshold","Accuracy","F1 score"])
+
+
+#careate labels for test data. Normal: 1, Anomal: 0
+y_anomal = np.ones((len(anomal),1))
+y_normal = np.zeros((len(test_normal),1))
+labels = np.concatenate((y_normal,y_anomal))
+
+#test data
+xtest = np.concatenate((test_normal,anomal),axis=0)
+
+#predict and measure prefomance
+pred = predict_anomaly(cnn_autoencoder,xtest,0.071)
+perfomence(pred,labels)
