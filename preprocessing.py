@@ -12,6 +12,7 @@ from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
 from sklearn import svm
 from keras import optimizers, regularizers, backend as K
+import seaborn as sn
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -71,14 +72,14 @@ def getKdd99_AE(Xtrain):
     tb = TensorBoard(log_dir="./logs/{}".format(time()),histogram_freq=0,write_graph=True,write_images=False)
 
     # Fit autoencoder
-    autoencoder.fit(Xtrain, Xtrain,epochs=10,validation_split=0.1 ,batch_size=100,shuffle=False,verbose=1,callbacks=[tb])
+    autoencoder.fit(Xtrain, Xtrain,epochs=10,validation_split=0.1 ,batch_size=100,shuffle=False,verbose=0,callbacks=[tb])
 
     #create dimension reducer
     dim_reducer = Model(inputs = input_, outputs = encoding)
 
     return autoencoder , dim_reducer
 
-def get_kdd_data():
+def get_kdd_data(with_original = False):
     df = pd.read_csv('kdd99_train.csv.gz', compression='gzip',sep=',')
 
     anomalies = df[df["label"]==0].sample(n=372781, replace=False, random_state=43)
@@ -89,18 +90,41 @@ def get_kdd_data():
 
     Scaler = StandardScaler()
 
-    #Train data (normal data only)
-    nomalies_train = nomalies_train.drop(["label"],axis=1).values
-    Scaler.fit(nomalies_train)
-    nomalies_train = Scaler.transform(nomalies_train)
+    if(with_original == False):
 
-    #test data (anomaly + normal)
-    anomalies.label = np.full((len(anomalies),1),-1)
-    # anomalies.label = np.where(anomalies.label == 0,-1,0)
+        #Train data (normal data only)
+        nomalies_train = nomalies_train.drop(["label"],axis=1).values
+        Scaler.fit(nomalies_train)
+        nomalies_train = Scaler.transform(nomalies_train)
 
-    test_data = pd.concat([nomalies_test,anomalies])
-    ytest = test_data.label.values
-    test_data = Scaler.transform(test_data.drop(["label"],axis=1).values)
+        #test data (anomaly + normal)
+        anomalies.label = np.full((len(anomalies),1),-1)
+        # anomalies.label = np.where(anomalies.label == 0,-1,0)
 
+        test_data = pd.concat([nomalies_test,anomalies])
+        ytest = test_data.label.values
+        test_data = Scaler.transform(test_data.drop(["label"],axis=1).values)
 
-    return nomalies_train, test_data, ytest
+        return nomalies_train, test_data, ytest
+    else:
+        #Train data (normal data only)
+        original_train = nomalies_train.copy()
+        nomalies_train = nomalies_train.drop(["label"],axis=1).values
+        Scaler.fit(nomalies_train)
+        nomalies_train = Scaler.transform(nomalies_train)
+
+        #test data (anomaly + normal)
+        anomalies.label = np.full((len(anomalies),1),-1)
+        # anomalies.label = np.where(anomalies.label == 0,-1,0)
+        test_data = pd.concat([nomalies_test,anomalies])
+        test_data_original = test_data.copy()
+        ytest = test_data.label.values
+        test_data = Scaler.transform(test_data.drop(["label"],axis=1).values)
+
+        #return train (containing only normal data and scaled),train (not scaled), test(scaled),labels for test
+        return nomalies_train, original_train, test_data, test_data_original, ytest
+def get_isof_data():
+    df = pd.read_csv('kdd99_train.csv.gz', compression='gzip',sep=',')
+
+    anomalies = df[df["label"]==0].sample(n=372781, replace=False, random_state=43)
+    nomalies = df[df["label"]==1]

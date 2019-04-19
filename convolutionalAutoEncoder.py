@@ -250,7 +250,7 @@ for i in np.linspace(0.015,0.3,50):
 threshold_df = pd.DataFrame(t,columns=["Threshold","Accuracy","F1 score"])
 
 
-#careate labels for test data. Normal: 1, Anomal: 0
+#create labels for test data. Normal: 1, Anomal: 0
 y_anomal = np.ones((len(anomal),1))
 y_normal = np.zeros((len(test_normal),1))
 labels = np.concatenate((y_normal,y_anomal))
@@ -258,6 +258,6 @@ labels = np.concatenate((y_normal,y_anomal))
 #test data
 xtest = np.concatenate((test_normal,anomal),axis=0)
 
-#predict and measure prefomance
+#predict and measure performance 
 pred = predict_anomaly(cnn_autoencoder,xtest,0.071)
 perfomence(pred,labels)

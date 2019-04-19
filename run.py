@@ -6,7 +6,7 @@ from sklearn import svm
 from sklearn.metrics import accuracy_score,f1_score,confusion_matrix,classification_report
 #from preprocessing.py
 from preprocessing import getKdd99_AE,get_kdd_data
-
+import seaborn as sn
 from matplotlib import pyplot as plt
 %matplotlib inline
 
@@ -29,8 +29,8 @@ def get_losses(model, x):
     err = mse(x, pred)
     return err
 
-#measure model perfomence in terms of accuracy, confusion_matrix and F1 score
-def perfomence(true,pred):
+#measure model performance in terms of accuracy, confusion_matrix and F1 score
+def performance(true,pred):
     acc = accuracy_score(pred,true)
     print("Accurary : ",acc)
     f1 = f1_score(true,pred)
@@ -58,34 +58,47 @@ def get_anomaly_score(model,x):
     return mse(pred,x)[:,np.newaxis]
 
 #Get train and test data
+# nomalies_train, original_train, test_data, test_data_original, ytest = get_kdd_data(with_original=True)
 nomalies_train, test_data, ytest = get_kdd_data()
 
 #create an autoencoder to be also used in dimension reduction
 autoencoder , dim_reducer = getKdd99_AE(nomalies_train)
+#CPU times: user 6min 6s, sys: 26.6 s, total: 6min 33s
+#Wall time: 4min 56s : for training AE
 
 #reduce dimension using encoder from autoencoder (train and test set)
 X_dim_reduced = dim_reducer.predict(nomalies_train)
 xtext = dim_reducer.predict(test_data)
 
+#CPU times: user 2h 32min 2s, sys: 19.9 s, total: 2h 32min 22s
+# Wall time: 2h 32min 20s , nu=0.03
 model = svm.OneClassSVM(kernel='rbf', nu=0.005,gamma="auto")
 model.fit(X_dim_reduced)
+
+# CPU times: user 1h 43min 19s, sys: 10.7 s, total: 1h 43min 30s
+# Wall time: 1h 43min 29s
+# OneClassSVM(cache_size=200, coef0=0.0, degree=3, gamma='auto', kernel='rbf',
+#       max_iter=-1, nu=0.005, random_state=None, shrinking=True, tol=0.001,
+#       verbose=False)
+# Accurary :  0.9947191973744047
+# F1 Score :  0.9923094299326434
 
 #predict anomalies from test data
 pred = model.predict(xtext)
 
 #Display accuraccy, F1 score, confusion_matrix and classification report
-perfomence(ytest,pred)
+performance(ytest,pred)
 
 #Autoencoder as clasifier
 #find the threshold
 losses = get_losses(autoencoder, nomalies_train)
 loss_df = pd.DataFrame(losses,columns=["loss"])
+# loss_df.describe()
 
-loss_df.describe()
 #test with autoencoder
-#predict anomalies using autoencoder (utilizing the reconstruction error threshold) & measure perfomence
+#predict anomalies using autoencoder (utilizing the reconstruction error threshold) & measure performance
 pred = IsAnomaly(autoencoder,test_data)
-perfomence(ytest,pred)
+performance(ytest,pred)
 
 # save the classifier
 with open('oncsvm.pkl', 'wb') as fid:
@@ -93,11 +106,12 @@ with open('oncsvm.pkl', 'wb') as fid:
 
 # load classifier
 with open('oncsvm.pkl', 'rb') as fid:
-    model1 = pickle.load(fid)
-model1.get_params
+    model = pickle.load(fid)
+
 
 #IsolationForest
 from sklearn.ensemble import IsolationForest
+
 
 isofor = IsolationForest(n_jobs=-1,n_estimators=100, behaviour="new",max_samples=256, contamination=0.6)
 isofor.fit(test_data)
@@ -105,4 +119,6 @@ isofor.fit(test_data)
 import seaborn as sn
 from matplotlib import pyplot as plt
 aa = isofor.predict(test_data)
-perfomence(ytest,aa)
+performance(ytest,aa)
+
+loss_df.copy()
