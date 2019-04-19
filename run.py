@@ -3,9 +3,10 @@ import pandas as pd # import pandas_profiling
 import numpy as np
 import pickle,warnings
 from sklearn import svm
+from sklearn.ensemble import IsolationForest
 from sklearn.metrics import accuracy_score,f1_score,confusion_matrix,classification_report
 #from preprocessing.py
-from preprocessing import getKdd99_AE,get_kdd_data
+from preprocessing import getKdd99_AE,get_kdd_data,get_isof_data
 import seaborn as sn
 from matplotlib import pyplot as plt
 %matplotlib inline
@@ -46,7 +47,7 @@ def performance(true,pred,title="confusion matrix"):
     plt.yticks(fontsize=20)
     plt.title(title,fontsize=20)
     fig = sn.heatmap(df_cm,fmt='g',annot=True,annot_kws={"size": 20})
-    plt.savefig("test.png")
+    # plt.savefig("test.png")
 
 def IsAnomaly(model,x,threshold=0.252):
     pred = model.predict(x)
@@ -78,7 +79,7 @@ xtext = dim_reducer.predict(test_data)
 model = svm.OneClassSVM(kernel='rbf', nu=0.01,gamma="auto")
 %%time
 model.fit(X_dim_reduced)
-X_dim_reduced.shape
+
 # CPU times: user 1h 43min 19s, sys: 10.7 s, total: 1h 43min 30s
 # Wall time: 1h 43min 29s
 # OneClassSVM(cache_size=200, coef0=0.0, degree=3, gamma='auto', kernel='rbf',
@@ -113,15 +114,14 @@ with open('oncsvm.pkl', 'wb') as fid:
 with open('oncsvm.pkl', 'rb') as fid:
     model = pickle.load(fid)
 
-
 #IsolationForest
 from sklearn.ensemble import IsolationForest
 
+X_train,xtext,ytest = get_isof_data()
 
 isofor = IsolationForest(n_jobs=-1,n_estimators=100, behaviour="new",max_samples=256, contamination=0.6)
-isofor.fit(test_data)
+isofor.fit(X_train)
 
-import seaborn as sn
-from matplotlib import pyplot as plt
-aa = isofor.predict(test_data)
-performance(ytest,aa)
+pred = isofor.predict(xtext)
+pred = np.where(pred == -1,0,1)
+performance(ytest,pred)

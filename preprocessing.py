@@ -126,5 +126,12 @@ def get_kdd_data(with_original = False):
 def get_isof_data():
     df = pd.read_csv('kdd99_train.csv.gz', compression='gzip',sep=',')
 
+
     anomalies = df[df["label"]==0].sample(n=372781, replace=False, random_state=43)
     nomalies = df[df["label"]==1]
+    xtrain, xtest = train_test_split(pd.concat([anomalies,nomalies]),test_size=0.3,random_state=41)
+    xtrain = xtrain.drop(["label"],axis=1).values
+    ytest = xtest.label.values
+    xtest = xtest.drop(["label"],axis=1).values
+
+    return xtrain,xtest,ytest
