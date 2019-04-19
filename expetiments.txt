@@ -1,0 +1,39 @@
+KDD99
+results : OCSVM
+=============================
+TRAIN ((778224, 12))
+CPU times: user 1h 57min 29s, sys: 42.9 s, total: 1h 58min 12s
+Wall time: 2h 10min 29s
+OneClassSVM(cache_size=200, coef0=0.0, degree=3, gamma='auto', kernel='rbf',
+      max_iter=-1, nu=0.01, random_state=None, shrinking=True, tol=0.001,
+      verbose=False)
+-------
+TEST (SAMPLES : (567338, 12))
+CPU times: user 1min 49s, sys: 701 ms, total: 1min 50s
+Wall time: 1min 53s
+
+Accurary :  0.9913525975697027
+F1 Score :  0.9874238019799949
+Classification report
+              precision    recall  f1-score   support
+
+          -1       0.99      0.99      0.99    371793
+           1       0.99      0.98      0.99    195545
+
+   micro avg       0.99      0.99      0.99    567338
+   macro avg       0.99      0.99      0.99    567338
+weighted avg       0.99      0.99      0.99    567338
+
+
+
+
+cifar10
+==============================
+CNN_AE
+TRAIN
+
+---------
+TEST
+CPU times: user 488 ms, sys: 119 ms, total: 607 ms
+Wall time: 522 ms
+==============================

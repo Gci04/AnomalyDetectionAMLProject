@@ -12,7 +12,6 @@ from keras.models import  Model
 from keras.layers import Conv2D, Conv2DTranspose, Input
 from keras.optimizers import Adam
 import pickle
-<<<<<<< HEAD
 from preprocessing import image_normalization_mapping
 
 
@@ -22,13 +21,13 @@ class ConvolutionalAutoencoder():
         self.NORMAL_CLASS = NORMAL_CLASS
         self.ANOMAL_DATA_NUMB = ANOMAL_DATA_NUMB
         self.IM_SIZE = X_train.shape[1]
-        self.IM_CHANNELS = X_train.shape[3] 
-        
+        self.IM_CHANNELS = X_train.shape[3]
+
         self.train_normal, self.test_normal = self.get_normal_data()
         self.anomal = self.get_anomal_data()
-        
+
         self.autoencoder, self.dim_reducer = self.CreateAutoencoder(lr)
-        
+
     def get_normal_data(self):
         idx = np.where(self.Y_train[:,0]==self.NORMAL_CLASS)
         train_normal = self.X_train[idx]
@@ -42,31 +41,31 @@ class ConvolutionalAutoencoder():
         anomal = self.X_train[idx]
         anomal = image_normalization_mapping(anomal, 0, 255, -1, 1)
         return anomal
-    
+
     def CreateAutoencoder(self, lr = 0.001):
         input_img = Input(shape = (self.IM_SIZE,self.IM_SIZE,self.IM_CHANNELS))
         l1 = Conv2D(filters=16, kernel_size=2, strides=(2,2), input_shape=(self.IM_SIZE,self.IM_SIZE,self.IM_CHANNELS), activation = 'tanh')(input_img)
         l2 =  Conv2D(filters=64, kernel_size=2, strides=(2,2), activation = 'tanh')(l1)
         l3 = Conv2D(filters=128, kernel_size=2, strides=(2,2), activation = 'tanh')(l2)
         l4 =  Conv2D(filters=256, kernel_size=2, strides=(2,2), activation = 'tanh')(l3)
-    
+
         encoding = Conv2D(filters=32, kernel_size=2, strides=(2,2), activation = 'tanh')(l4)
-    
+
         l5 = Conv2DTranspose(filters=512, kernel_size=2, strides=(2,2), activation = 'tanh')(encoding)
         l6 = Conv2DTranspose(filters=256, kernel_size=2, strides=(2,2), activation = 'tanh')(l5)
         l7 = Conv2DTranspose(filters=128, kernel_size=2, strides=(2,2), activation = 'tanh')(l6)
         l8 = Conv2DTranspose(filters=128, kernel_size=2, strides=(2,2), activation = 'tanh')(l7)
-    
+
         decoded = Conv2DTranspose(filters=3, kernel_size=2, strides=(2,2), activation = 'tanh')(l8)
-    
+
         autoencoder = Model(inputs=input_img , outputs=decoded)
         optimizer = Adam(lr)
         autoencoder.compile(loss='mean_squared_error', optimizer=optimizer, metrics=['accuracy'])
-    
+
         dim_reducer = Model(inputs = input_img, outputs = encoding)
-    
+
         return autoencoder, dim_reducer
-    
+
     def Batches(self,normal_data, batches_numb):
         N = normal_data.shape[0]
         batch_size = int(N/batches_numb) + 1
@@ -77,7 +76,7 @@ class ConvolutionalAutoencoder():
                 end_idx = N
             data = normal_data[start_idx:end_idx]
             yield data
-    
+
     def visualize(self):
         img = image_normalization_mapping(self.train_normal[2], -1, 1, 0, 255).astype('uint8')
         plt.imshow(img)
@@ -93,7 +92,7 @@ class ConvolutionalAutoencoder():
         img = image_normalization_mapping(img[0], -1, 1, 0, 255).astype('uint8')
         plt.imshow(img)
         plt.show()
-    
+
     def train(self,epochs=1000):
         for epoch in range(epochs):
             n = 0
@@ -108,13 +107,13 @@ class ConvolutionalAutoencoder():
             if epoch%100==0:
                 self.visualize()
             print(f'epoch {epoch} loss: {LOSS} accuracy: {ACC}')
-    
+
     def save_models(self):
         with open('dim_reducer.pickle', 'wb') as f:
             pickle.dump(self.dim_reducer, f)
         with open('autoencoder.pickle', 'wb') as f:
-            pickle.dump(self.autoencoder, f)   
-            
+            pickle.dump(self.autoencoder, f)
+
     def reduce_dim_and_save(self):
         #REDUCE DIMENTION FOR EACH IMAGE
         reduced_anomal = self.dim_reducer.predict(self.anomal)
@@ -122,14 +121,14 @@ class ConvolutionalAutoencoder():
         reduced_test_normal = self.dim_reducer.predict(self.test_normal)
         test_mixed = np.concatenate((reduced_test_normal,reduced_anomal))
         labels = np.concatenate((np.ones(reduced_test_normal.shape[0]),np.zeros(reduced_anomal.shape[0])))
-        
+
         #SAVE IMAGES WITH REDUCED DIMENTIONS
         with open('train_normal.pickle', 'wb') as f:
           pickle.dump(reduced_train_normal, f)
-        
+
         with open('test_mixed.pickle', 'wb') as f:
           pickle.dump(test_mixed, f)
-        
+
         with open('labels.pickle', 'wb') as f:
           pickle.dump(labels, f)
 
@@ -236,34 +235,6 @@ def Convolutional_Autoencoder(lr):
     dim_reducer = Model(inputs = input_img, outputs = encoding)
 
     return autoencoder, dim_reducer
-
-def Classical_autoencoder(lr = 0.01):
-    autoencoder = Sequential()
-    autoencoder.add(Flatten())
-    autoencoder.add(Dense(128, activation="tanh"))
-    autoencoder.add(Dense(64, activation="tanh"))
-    autoencoder.add(Dense(32, activation="tanh"))
-    autoencoder.add(Dense(4,activation=None))
-
-
-    autoencoder.add(Dense(4, activation="tanh"))
-    autoencoder.add(Dense(32, activation="tanh"))
-    autoencoder.add(Dense(64, activation='tanh'))
-
-    autoencoder.add(Dense(IM_SIZE*IM_SIZE*IM_CHANNELS,activation='tanh'))
-    autoencoder.add(Reshape((IM_SIZE,IM_SIZE,IM_CHANNELS)))
-
-    inp = Input(shape=(IM_SIZE, IM_SIZE, IM_CHANNELS))
-    out = autoencoder(inp)
-
-    autoencoder_model = Model(inputs=inp , outputs=out)
-    autoencoder_model.summary()
-    optimizer = Adam(lr, 0.5)
-
-    autoencoder_model.compile(loss='mean_squared_error',
-        optimizer=optimizer, metrics=['accuracy'])
-
-    return autoencoder_model
 
 def Batches(normal_data, batches_numb):
     N = normal_data.shape[0]
@@ -388,7 +359,6 @@ labels = np.concatenate((y_normal,y_anomal))
 #test data
 xtest = np.concatenate((test_normal,anomal),axis=0)
 
-#predict and measure performance 
+#predict and measure performance
 pred = predict_anomaly(cnn_autoencoder,xtest,0.071)
 perfomence(pred,labels)
->>>>>>> 4114e196ee692a421d59fe2116c3fe512593209f
