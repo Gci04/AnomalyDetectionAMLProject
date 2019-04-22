@@ -4,7 +4,7 @@ from keras.layers import BatchNormalization
 from keras.layers import concatenate
 from keras.layers.advanced_activations import LeakyReLU
 from keras.models import Sequential, Model
-from keras.optimizers import Adam
+from keras.optimizers import Adam, RMSprop
 import keras.backend as K
 from preprocessing import image_normalization_mapping
 from matplotlib import pyplot as plt
@@ -14,16 +14,18 @@ import matplotlib.pyplot as plt
 from numpy.linalg import norm
 from sklearn.metrics import log_loss
 import numpy as np
+import time
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 class BIGAN():
     def __init__(self, data, NORMAL_CLASS = 8, ANOMAL_DATA_NUMB = 3000):
-        self.img_rows = 28
-        self.img_cols = 28
-        self.channels = 1
+        self.img_rows = 32
+        self.img_cols = 32
+        self.channels = 3
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
-        self.latent_dim = 100
+        self.latent_dim = 128
 
-        optimizer = optimizer = Adam(0.0002, 0.5)
+        optimizer = optimizer = RMSprop(0.0002, 0.5)
         
         self.X_train, self.Y_train, self.X_test, self.Y_test = data
         self.NORMAL_CLASS = NORMAL_CLASS
@@ -57,7 +59,7 @@ class BIGAN():
 
         #WHOLE MOSWL
         self.bigan_generator = Model([noise, img], [fake, valid])
-        self.bigan_generator.compile(loss=['binary_crossentropy', 'binary_crossentropy'],
+        self.bigan_generator.compile(loss='binary_crossentropy',
             optimizer=optimizer)
 
     def get_normal_data(self):
@@ -174,16 +176,16 @@ class BIGAN():
             self.D_LOSS.append(D_LOSS_/N)
             
             # If at save interval => save generated image samples
-            if epoch % interval == 0:
-                self.visualize(epoch)
-                print ("%d [D loss: %f, acc: %.2f%%] [G loss: %f]" % (epoch, D_LOSS_/N, 100*d_loss[1], G_LOSS_/N))
+            #if epoch % interval == 0:
+                #self.visualize(epoch)
+                #print ("%d [D loss: %f, acc: %.2f%%] [G loss: %f]" % (epoch, D_LOSS_/N, 100*d_loss[1], G_LOSS_/N))
 
     def visualize(self, epoch):
         z = np.random.normal(size=(25, self.latent_dim))
         gen_imgs = self.generator.predict(z)
 
         gen_imgs = image_normalization_mapping(gen_imgs, -1, 1, 0, 255).astype('uint8')        
-        plt.imshow(gen_imgs[0][:,:,0], cmap=cm.gray)
+        plt.imshow(gen_imgs[0])
         plt.show()
     
     
@@ -208,28 +210,64 @@ class BIGAN():
       
 
 if __name__ == '__main__':
-    (X_train, Y_train), (X_test, Y_test) = mnist.load_data()
-    data = X_train[:,:,:,np.newaxis], Y_train[:,np.newaxis], X_test[:,:,:,np.newaxis], Y_test[:,np.newaxis]
+    (X_train, Y_train), (X_test, Y_test) = cifar10.load_data()
+    data = X_train, Y_train, X_test, Y_test
     
     precis_1, precis_0 = [], []
     recall_1, recall_0 = [], []
     f1_score_1, f1_score_0 = [], []
+    accuracy = []
+    TRAIN_TIME = []
+    PREDICT_TIME = []
     
-    
-    for i in range(10):
+    for i in range(1):
       bigan = BIGAN(data, NORMAL_CLASS = i)
-      bigan.train(epochs=200, batch_size=512)
+      start = time.time()
+      bigan.train(epochs=500, batch_size=512)
+      end = time.time()
+      TRAIN_TIME.append(end - start)
       test_mixed = np.concatenate((bigan.anomal, bigan.test_normal))
+      start = time.time()
       scores = bigan.anomal_scores(test_mixed)
+      end = time.time()
+      PREDICT_TIME.append(end - start)
       labels = np.concatenate((np.zeros(bigan.anomal.shape[0]), np.ones(bigan.test_normal.shape[0])))
       prediction_idx = np.argsort(scores)[-bigan.anomal.shape[0]:]
       prediction = np.ones(bigan.anomal.shape[0]+bigan.test_normal.shape[0])
       prediction[prediction_idx] = 0
 
-      precis_1.append(precision_score(labels, prediction,  pos_label=1))
+      precis_1.append(precision_score(labels, prediction,  average='macro'))
       precis_0.append(precision_score(labels, prediction,  pos_label=0))
-      recall_1.append(recall_score(labels, prediction,  pos_label=1))
+      recall_1.append(recall_score(labels, prediction,  average='macro'))
       recall_0.append(recall_score(labels, prediction,  pos_label=0))
-      f1_score_1.append(f1_score(labels, prediction,  pos_label=1))
+      f1_score_1.append(f1_score(labels, prediction,  average='macro'))
       f1_score_0.append(f1_score(labels, prediction,  pos_label=0))
+      accuracy.append(accuracy_score(labels, prediction))
       
+      
+      
+    #PRECISION ON AVERAGE FOR CLASS 0
+    print("mean_prec0 = ", np.mean(precis_0))
+    print("std_prec0 = ", np.std(precis_0))
+    #PRECISION ON AVERAGE FOR CLASS 1
+    print("mean_prec1 = ", np.mean(precis_1))
+    print("std_prec1 = ", np.std(precis_1))
+    
+    #RECALL ON AVERAGE FOR CLASS 0
+    print("mean_rec0 = ", np.mean(recall_0))
+    print("std_rec0 = ", np.std(recall_0))
+    
+    #RECALL ON AVERAGE FOR CLASS 1
+    print("mean_rec1 = ", np.mean(recall_1))
+    print("std_rec1 = ", np.std(recall_1))
+    
+    #RECALL ON AVERAGE FOR CLASS 0
+    print("mean_f10 = ", np.mean(f1_score_0))
+    print("std_f10 = ", np.std(f1_score_0))
+    
+    #RECALL ON AVERAGE FOR CLASS 1
+    print("mean_f11 = ", np.mean(f1_score_1))
+    print("std_f11 = ", np.std(f1_score_1))
+    
+    print("accuracy = ", np.mean(accuracy))
+    print("accuracy = ", np.std(accuracy))
