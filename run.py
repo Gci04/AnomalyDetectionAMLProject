@@ -11,8 +11,8 @@ import seaborn as sn
 from matplotlib import pyplot as plt
 %matplotlib inline
 
+# import time
 warnings.filterwarnings('ignore')
-
 
 #Mean mean_squared_error for calculating reconstruction error
 def mse(pred,true):
@@ -64,6 +64,7 @@ def get_anomaly_score(model,x):
 # nomalies_train, original_train, test_data, test_data_original, ytest = get_kdd_data(with_original=True)
 nomalies_train, test_data, ytest = get_kdd_data()
 
+# nomalies_train.shape
 #create an autoencoder to be also used in dimension reduction
 autoencoder , dim_reducer = getKdd99_AE(nomalies_train)
 #CPU times: user 6min 6s, sys: 26.6 s, total: 6min 33s
@@ -77,7 +78,7 @@ xtext = dim_reducer.predict(test_data)
 # Wall time: 2h 32min 20s , nu=0.03
 
 model = svm.OneClassSVM(kernel='rbf', nu=0.01,gamma="auto")
-%%time
+# %%time
 model.fit(X_dim_reduced)
 
 # CPU times: user 1h 43min 19s, sys: 10.7 s, total: 1h 43min 30s
@@ -89,7 +90,7 @@ model.fit(X_dim_reduced)
 # F1 Score :  0.9923094299326434
 
 #predict anomalies from test data
-%%time
+# %%time
 pred = model.predict(xtext)
 xtext.shape
 #Display accuraccy, F1 score, confusion_matrix and classification report
@@ -103,6 +104,7 @@ loss_df = pd.DataFrame(losses,columns=["loss"])
 
 #test with autoencoder
 #predict anomalies using autoencoder (utilizing the reconstruction error threshold) & measure performance
+# %%time
 pred = IsAnomaly(autoencoder,test_data)
 performance(ytest,pred)
 
@@ -119,8 +121,11 @@ with open('oncsvm.pkl', 'rb') as fid:
 X_train,xtext,ytest = get_isof_data()
 
 isofor = IsolationForest(n_jobs=-1,n_estimators=100, behaviour="new",max_samples=256, contamination=0.1)
+# %%time
 isofor.fit(X_train)
 
+# %%time
 pred = isofor.predict(xtext)
+
 pred = np.where(pred == -1,0,1)
 performance(ytest,pred)

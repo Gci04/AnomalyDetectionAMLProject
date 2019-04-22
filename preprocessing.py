@@ -72,8 +72,10 @@ def getKdd99_AE(Xtrain):
     tb = TensorBoard(log_dir="./logs/{}".format(time()),histogram_freq=0,write_graph=True,write_images=False)
 
     # Fit autoencoder
+    start = time()
     autoencoder.fit(Xtrain, Xtrain,epochs=10,validation_split=0.1 ,batch_size=100,shuffle=False,verbose=0,callbacks=[tb])
-
+    end = time()
+    print(end-start)
     #create dimension reducer
     dim_reducer = Model(inputs = input_, outputs = encoding)
 
@@ -84,6 +86,8 @@ def get_kdd_data(with_original = False):
 
     anomalies = df[df["label"]==0].sample(n=372781, replace=False, random_state=43)
     nomalies = df[df["label"]==1]
+
+    print(nomalies.shape)
 
     # Split normal data for train and test
     nomalies_train ,nomalies_test = train_test_split(nomalies,test_size=0.2,random_state=41)

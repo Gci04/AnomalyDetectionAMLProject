@@ -24,7 +24,43 @@ Classification report
    macro avg       0.99      0.99      0.99    567338
 weighted avg       0.99      0.99      0.99    567338
 
+Results : Autoencoder
+=====================================
+Accurary :  0.9967744096112018
+F1 Score :  0.9952904481022822
+Classification report
+              precision    recall  f1-score   support
 
+          -1       1.00      1.00      1.00    373323
+           1       0.99      1.00      1.00    194015
+
+   micro avg       1.00      1.00      1.00    567338
+   macro avg       1.00      1.00      1.00    567338
+weighted avg       1.00      1.00      1.00    567338
+
+Result : IsolationForest
+====================================
+Train:
+CPU times: user 1min 27s, sys: 57 s, total: 2min 24s
+Wall time: 5min 42s
+IsolationForest(behaviour='new', bootstrap=False, contamination=0.1,
+        max_features=1.0, max_samples=256, n_estimators=100, n_jobs=-1,
+        random_state=None, verbose=0)
+Test:
+CPU times: user 35.7 s, sys: 19.8 s, total: 55.4 s
+Wall time: 1min 4s
+
+Accurary :  0.7381443707592111
+F1 Score :  0.8385930354184323
+Classification report
+              precision    recall  f1-score   support
+
+           0       0.21      0.58      0.31     40302
+           1       0.94      0.76      0.84    363367
+
+   micro avg       0.74      0.74      0.74    403669
+   macro avg       0.58      0.67      0.57    403669
+weighted avg       0.87      0.74      0.79    403669
 
 
 cifar10
@@ -37,3 +73,147 @@ TEST
 CPU times: user 488 ms, sys: 119 ms, total: 607 ms
 Wall time: 522 ms
 ==============================
+
+
+CPU times: user 25.4 s, sys: 2.23 s, total: 27.6 s
+Wall time: 27.1 s
+
+Anchor class: 0
+predict time : 4.91 sec
+Accurary :  0.51025
+F1 Score :  0.44235695986336465
+Classification report
+              precision    recall  f1-score   support
+
+           0       0.42      0.85      0.56      1487
+           1       0.78      0.31      0.44      2513
+
+   micro avg       0.51      0.51      0.51      4000
+   macro avg       0.60      0.58      0.50      4000
+weighted avg       0.64      0.51      0.49      4000
+
+Anchor class: 1
+predict time : 4.61 sec
+Accurary :  0.3095
+F1 Score :  0.35647716682199443
+Classification report
+              precision    recall  f1-score   support
+
+           0       0.16      0.67      0.26       708
+           1       0.77      0.23      0.36      3292
+
+   micro avg       0.31      0.31      0.31      4000
+   macro avg       0.46      0.45      0.31      4000
+weighted avg       0.66      0.31      0.34      4000
+
+Anchor class: 2
+predict time : 4.66 sec
+Accurary :  0.529
+F1 Score :  0.447831184056272
+Classification report
+              precision    recall  f1-score   support
+
+           0       0.45      0.85      0.59      1588
+           1       0.76      0.32      0.45      2412
+
+   micro avg       0.53      0.53      0.53      4000
+   macro avg       0.61      0.58      0.52      4000
+weighted avg       0.64      0.53      0.50      4000
+
+Anchor class: 3
+predict time : 4.43
+Accurary :  0.4395
+F1 Score :  0.4018143009605123
+Classification report
+              precision    recall  f1-score   support
+
+           0       0.34      0.80      0.47      1252
+           1       0.75      0.27      0.40      2748
+
+   micro avg       0.44      0.44      0.44      4000
+   macro avg       0.54      0.54      0.44      4000
+weighted avg       0.62      0.44      0.42      4000
+
+Anchor class: 4
+predict time :  4.49 sec
+Accurary :  0.58725
+F1 Score :  0.4855095045185415
+Classification report
+              precision    recall  f1-score   support
+
+           0       0.52      0.88      0.66      1791
+           1       0.78      0.35      0.49      2209
+
+   micro avg       0.59      0.59      0.59      4000
+   macro avg       0.65      0.61      0.57      4000
+weighted avg       0.66      0.59      0.56      4000
+
+Anchor class: 5
+predict time : 4.57 sec
+Accurary :  0.401
+F1 Score :  0.3970810266733769
+Classification report
+              precision    recall  f1-score   support
+
+           0       0.27      0.79      0.40      1026
+           1       0.79      0.27      0.40      2974
+
+   micro avg       0.40      0.40      0.40      4000
+   macro avg       0.53      0.53      0.40      4000
+weighted avg       0.66      0.40      0.40      4000
+
+Anchor class: 6
+predict time : 4.436sec
+Accurary :  0.50675
+F1 Score :  0.43353430950330174
+Classification report
+              precision    recall  f1-score   support
+
+           0       0.42      0.84      0.56      1517
+           1       0.76      0.30      0.43      2483
+
+   micro avg       0.51      0.51      0.51      4000
+   macro avg       0.59      0.57      0.50      4000
+weighted avg       0.63      0.51      0.48      4000
+
+Anchor class: 7
+predict time : 4.436sec
+Accurary :  0.372
+F1 Score :  0.38097585017249885
+Classification report
+              precision    recall  f1-score   support
+
+           0       0.24      0.76      0.36       942
+           1       0.77      0.25      0.38      3058
+
+   micro avg       0.37      0.37      0.37      4000
+   macro avg       0.51      0.51      0.37      4000
+weighted avg       0.65      0.37      0.38      4000
+
+Anchor class: 8
+predict time: 4.58sec
+Accurary :  0.569
+F1 Score :  0.480722891566265
+Classification report
+              precision    recall  f1-score   support
+
+           0       0.49      0.88      0.63      1680
+           1       0.80      0.34      0.48      2320
+
+   micro avg       0.57      0.57      0.57      4000
+   macro avg       0.65      0.61      0.56      4000
+weighted avg       0.67      0.57      0.54      4000
+
+Anchor class: 9
+predict time: 4.44sec
+Accurary :  0.2945
+F1 Score :  0.35629562043795615
+Classification report
+              precision    recall  f1-score   support
+
+           0       0.13      0.64      0.22       616
+           1       0.78      0.23      0.36      3384
+
+   micro avg       0.29      0.29      0.29      4000
+   macro avg       0.46      0.44      0.29      4000
+weighted avg       0.68      0.29      0.34      4000
